@@ -9,70 +9,49 @@
 #include "gpio.h"
 #include "tim.h"
 
-
-uint32_t pressTime = 0;
-uint32_t currentTime = 0;
+uint8_t state = 0;
+uint8_t status = 0;
+uint32_t startTime = 0;
+uint32_t stopTime = 0;
 uint32_t holdTime = 0;
-uint8_t counterButton = 0;
-
+uint32_t currentTime = 0;
 
 void ProcManualButton (void)
-
-//{
-//	currentTime = HAL_GetTick();
-//
-//
-//	if (HAL_GPIO_ReadPin(KEY_GPIO_Port, KEY_Pin) == 0)
-//	{
-//		pressTime = currentTime;
-//		HAL_TIM_Base_Start_IT(&htim2);
-//	}
-//
-//
-//	if (HAL_GPIO_ReadPin(KEY_GPIO_Port, KEY_Pin) == 1)
-//	{
-//		holdTime = currentTime - pressTime;
-//
-//		if (counterButton == 0)
-//		{
-//			counterButton++;
-//		}
-//
-//		if (holdTime > 1000)
-//		{
-//			if (counterButton == 0)
-//			{
-//				HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
-//			}
-//			if (counterButton == 1)
-//			{
-//				HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
-//			}
-//			HAL_TIM_Base_Stop_IT(&htim2);
-//		}
-//	}
-//}
-//
-//void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
-//{
-//    if (htim->Instance == TIM2)
-//    {
-//        counterButton = 0;
-//    }
-//}
-
-
 {
+	currentTime = HAL_GetTick();
 
-	if (HAL_GPIO_ReadPin(KEY_GPIO_Port, KEY_Pin))
+	if ((HAL_GPIO_ReadPin(KEY_GPIO_Port, KEY_Pin) == 0) && (state == 0))
 	{
-		HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
+		startTime = currentTime;
 	}
-	else
+	if (HAL_GPIO_ReadPin(KEY_GPIO_Port, KEY_Pin) == 1)
 	{
-		HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
+		stopTime = currentTime;
+		holdTime = stopTime - startTime;
+		state = 1;
+	}
+
+	if ((HAL_GPIO_ReadPin(KEY_GPIO_Port, KEY_Pin) == 0) && (state == 1))
+	{
+		if (holdTime == 0)
+		{
+			status = 0;
+		}
+		else if (holdTime < 1000)
+		{
+			status = 1;
+		}
+		else if (holdTime >= 1000)
+		{
+			status = 2;
+		}
+		holdTime = 0;
+		state = 0;
+
 	}
 }
+
+
 
 
 
