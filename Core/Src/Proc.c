@@ -25,23 +25,16 @@ uint8_t getButStatus()
 {
 	if (holdTime == 0)
 	{
-		holdTime = 0;
-		state = 0;
 		return BUT_NOT_PRESSED;
 	}
 	if (holdTime < 1000)
 	{
-		holdTime = 0;
-		state = 0;
 		return BUT_PRESS_SHORT;
 	}
 	if (holdTime >= 1000)
 	{
-		holdTime = 0;
-		state = 0;
 		return BUT_PRESS_LONG;
 	}
-	currentTime = 0;
 }
 
 void ProcManualButton (void)
@@ -63,7 +56,15 @@ void ProcManualButton (void)
 		state = 0;
 		HAL_TIM_Base_Start_IT(&htim2);
 		status = getButStatus();
+		holdTime = 0;
+		state = 0;
 	}
+}
+
+
+void setButStatus (void)
+{
+
 }
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
@@ -71,6 +72,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     if (htim->Instance == TIM2)
     {
     	status = getButStatus();
+    	holdTime = 0;
+    	state = 0;
     	HAL_TIM_Base_Stop_IT(&htim2);
     }
 }
