@@ -12,18 +12,19 @@
 #define BUT_NOT_PRESSED 0
 #define BUT_PRESS_SHORT 1
 #define BUT_PRESS_LONG 2
-#define SIZE 3
+#define SIZE 2
 
 
 static uint8_t state = 0;
-uint8_t status = 0;
 static uint32_t startTime = 0;
 static uint32_t stopTime = 0;
 static uint32_t holdTime = 0;
 static uint32_t currentTime = 0;
 static uint32_t resetTime = 0;
-static uint8_t arr[SIZE] = {1,0,1};
+static uint8_t listPress[SIZE] = {0,0};
 static uint8_t counter = 0;
+static uint8_t liftUp[SIZE] = {1,2};
+static uint8_t liftDown[SIZE] = {2,0};
 
 uint8_t getButStatus()
 {
@@ -61,11 +62,13 @@ void ProcManualButton (void)
 	if ((HAL_GPIO_ReadPin(KEY_GPIO_Port, KEY_Pin) == 0) && (state == 1))
 	{
 		state = 0;
-		HAL_TIM_Base_Start_IT(&htim2);  ////////////////
-		status = getButStatus();
-
-		arr[counter] = getButStatus();
+		listPress[counter] = getButStatus();
 		counter++;
+		setLiftStatus();
+		if (counter == 2)
+		{
+			counter = 0;
+		}
 
 		holdTime = 0;
 		state = 0;
@@ -75,21 +78,22 @@ void ProcManualButton (void)
 	{
 		for(uint8_t i = 0; i < SIZE; i++)
 		{
-			arr[i] = 0;
+			listPress[i] = 0;
 		}
 		counter = 0;
 	}
 }
 
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) ////////////////
+void setLiftStatus(void)
 {
-    if (htim->Instance == TIM2)
-    {
-    	status = getButStatus();
-    	holdTime = 0;
-    	state = 0;
-    	HAL_TIM_Base_Stop_IT(&htim2);
-    }
+	if ((listPress[0] == liftDown[0]) && (listPress[1] == liftDown[1]))
+	{
+		HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
+	}
+	else if ((listPress[0] == liftUp[0]) && (listPress[1] == liftUp[1]))
+	{
+		HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
+	}
 }
 
 
