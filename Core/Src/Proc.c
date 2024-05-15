@@ -23,6 +23,7 @@ static uint32_t holdTime = 0;
 static uint32_t currentTime = 0;
 static uint32_t resetTime = 0;
 static uint8_t arr[SIZE] = {1,0,1};
+static uint8_t counter = 0;
 
 uint8_t getButStatus()
 {
@@ -62,6 +63,10 @@ void ProcManualButton (void)
 		state = 0;
 		HAL_TIM_Base_Start_IT(&htim2);  ////////////////
 		status = getButStatus();
+
+		arr[counter] = getButStatus();
+		counter++;
+
 		holdTime = 0;
 		state = 0;
 	}
@@ -72,6 +77,7 @@ void ProcManualButton (void)
 		{
 			arr[i] = 0;
 		}
+		counter = 0;
 	}
 }
 
