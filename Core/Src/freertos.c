@@ -125,7 +125,6 @@ void StartDefaultTask(void const * argument)
   /* Infinite loop */
   for(;;)
   {
-
 	ProcManualButton();
     osDelay(1);
   }
