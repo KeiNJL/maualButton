@@ -166,8 +166,6 @@ uint8_t GetButCommand(void)
 	}
 }
 
-void
-
 
 
 
