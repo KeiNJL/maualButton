@@ -12,13 +12,10 @@
 #define BUT_PRESS_FREE 0
 #define BUT_PRESS_SHORT 1
 #define BUT_PRESS_LONG 2
-#define BUT_PRESS_SETUP 3
-
-#define PRESS_LIST_SIZE 3
+#define PRESS_LIST_SIZE 2
 
 #define DEBOUNCE_TIME 20
 #define BORDER_TIME 500
-#define SETUP_TIME 5000
 
 #define LIFT_FREE 0
 #define LIFT_UP 1
@@ -37,10 +34,9 @@ static uint8_t counter = 0;
 static uint8_t resetCounter = 0;
 static uint8_t butCounter = 0;
 
-static uint8_t pressList[PRESS_LIST_SIZE] = {0,0,0};
-static uint8_t liftUp[PRESS_LIST_SIZE] = {1,0,2};
-static uint8_t liftDown[PRESS_LIST_SIZE] = {2,0,0};
-static uint8_t liftSetup[PRESS_LIST_SIZE] = {3,0,0};
+static uint8_t pressList[PRESS_LIST_SIZE] = {0,0};
+static uint8_t liftUp[PRESS_LIST_SIZE] = {1,2};
+static uint8_t liftDown[PRESS_LIST_SIZE] = {2,0};
 
 static uint8_t command = 0;
 
@@ -50,15 +46,11 @@ uint8_t getButStatus(void)
 	{
 		return BUT_PRESS_FREE;
 	}
-	else if (holdTime >= SETUP_TIME)
-	{
-		return BUT_PRESS_SETUP;
-	}
 	else if (holdTime < BORDER_TIME)
 	{
 		return BUT_PRESS_SHORT;
 	}
-	else if ((holdTime >= BORDER_TIME) && (holdTime < SETUP_TIME))
+	else if (holdTime >= BORDER_TIME)
 	{
 		return BUT_PRESS_LONG;
 	}
@@ -72,10 +64,6 @@ void ProcManualButton (void)
 	{
 		startTime = currentTime;
 		resetTime = currentTime - stopTime;
-		if(resetTime >= 1000)
-		{
-			resetPressList();
-		}
 		butCounter = 0;
 	}
 	else if (HAL_GPIO_ReadPin(KEY_GPIO_Port, KEY_Pin) == 1)
@@ -83,56 +71,73 @@ void ProcManualButton (void)
 		holdTime = currentTime - startTime;
 	}
 
-	if ((HAL_GPIO_ReadPin(KEY_GPIO_Port, KEY_Pin) == 1) && (butState == 0))
+	if (HAL_GPIO_ReadPin(KEY_GPIO_Port, KEY_Pin) == 1)
 	{
 		butCounter++;
 		if (butCounter > DEBOUNCE_TIME)
 		{
 			resetTime = 0;
+			SetPressList();
 			butState = 1;
 		}
 	}
 	else if ((HAL_GPIO_ReadPin(KEY_GPIO_Port, KEY_Pin) == 0) && (butState == 1))
 	{
-		SetPressList();
-		resetTime = 0;
 		stopTime = currentTime;
-		holdTime = 0;
-		if (resetCounter == 0)
-		{
-			SetPressList();
-		}
-		resetCounter++;
 		butState = 0;
+		SetPressList();
 	}
+
+	if(resetTime >= 1000)
+	{
+		resetPressList();
+	}
+
+	setLiftStatus();
 }
 
 void SetPressList (void)
 {
-	pressList[counter] = getButStatus();
-	counter++;
-	if (counter == 3)
-	{
-		counter = 0;
-	}
-	setLiftStatus();
+		if (HAL_GPIO_ReadPin(KEY_GPIO_Port, KEY_Pin) == 1)
+		{
+			pressList[counter] = getButStatus();
+		}
+		else if (HAL_GPIO_ReadPin(KEY_GPIO_Port, KEY_Pin) == 0)
+		{
+			holdTime = 0;
+			resetTime = 0;
+			counter++;
+			if (counter >= 3)
+			{
+				counter = 0;
+			}
+			pressList[counter] = getButStatus();
+		}
 }
 
 void setLiftStatus(void)
 {
-	if ((pressList[0] == liftDown[0]) && (pressList[1] == liftDown[1]) && (pressList[2] == liftDown[2]))		//длинное нажатие ( >500 мс)
+	if ((pressList[0] == liftDown[0]) && (pressList[1] == liftDown[1]))			//длинное нажатие ( >500 мс)
 	{
 		HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
 		command = LIFT_DOWN;
+		if (HAL_GPIO_ReadPin(KEY_GPIO_Port, KEY_Pin) == 0)
+		{
+			resetPressList();
+		}
 	}
-	else if ((pressList[0] == liftUp[0]) && (pressList[1] == liftUp[1]) && (pressList[2] == liftUp[2]))	//короткое + длинное нажатие
+	else if ((pressList[0] == liftUp[0]) && (pressList[1] == liftUp[1]))		//короткое + длинное нажатие
 	{
 		HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
 		command = LIFT_UP;
+		if (HAL_GPIO_ReadPin(KEY_GPIO_Port, KEY_Pin) == 0)
+		{
+			resetPressList();
+		}
 	}
-	else if ((pressList[0] == liftSetup[0]) && (pressList[1] == liftSetup[1]) && (pressList[2] == liftSetup[2]))	//юстировка (Длинное нажатие более 5 секунд)
+	else
 	{
-		command = LIFT_SETUP;
+		command = LIFT_FREE;
 	}
 }
 
@@ -160,14 +165,5 @@ uint8_t GetButCommand(void)
 	{
 		return LIFT_FREE;
 	}
-	else if (command == LIFT_SETUP)
-	{
-		return LIFT_SETUP;
-	}
 }
-
-void
-
-
-
 
